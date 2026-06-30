@@ -101,15 +101,22 @@ exports.login = async (req, res, next) => {
 // @desc    Google OAuth callback
 // @route   GET /api/auth/google/callback
 exports.googleCallback = async (req, res) => {
-  const token = req.user.getSignedJwtToken();
-  const options = {
-    expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000),
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-  };
-  res.cookie('token', token, options);
-  res.redirect(`${process.env.CLIENT_URL}/auth/google/success?token=${token}`);
+  try {
+    const token = req.user.getSignedJwtToken();
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+
+    const options = {
+      expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    };
+    res.cookie('token', token, options);
+    res.redirect(`${clientUrl}/auth/google/success?token=${token}`);
+  } catch (err) {
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    res.redirect(`${clientUrl}/login?error=google_auth_failed`);
+  }
 };
 
 // @desc    Logout user

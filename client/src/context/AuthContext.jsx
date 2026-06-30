@@ -22,9 +22,12 @@ export const AuthProvider = ({ children }) => {
     try {
       const { data } = await api.get('/auth/profile');
       setUser(data.user);
+      return data.user;
     } catch {
       localStorage.removeItem('token');
       delete api.defaults.headers.common['Authorization'];
+      setUser(null);
+      throw new Error('Failed to fetch profile');
     } finally {
       setLoading(false);
     }
@@ -52,11 +55,11 @@ export const AuthProvider = ({ children }) => {
 
   const updateUser = (updatedUser) => setUser(updatedUser);
 
-  // Set token from Google OAuth callback
+  // Set token from Google OAuth callback — returns a Promise
   const loginWithToken = (token) => {
     localStorage.setItem('token', token);
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    fetchProfile();
+    return fetchProfile();
   };
 
   return (
