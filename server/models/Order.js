@@ -6,6 +6,7 @@ const orderItemSchema = new mongoose.Schema({
   image: { type: String, required: true },
   price: { type: Number, required: true },
   quantity: { type: Number, required: true, min: 1 },
+  customPhoto: { type: String, default: '' }, // Cloudinary URL of customer's uploaded photo
 });
 
 const shippingInfoSchema = new mongoose.Schema({

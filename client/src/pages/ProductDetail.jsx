@@ -1,20 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { FiArrowLeft, FiShoppingCart, FiMinus, FiPlus } from 'react-icons/fi';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { FiArrowLeft, FiShoppingCart, FiMinus, FiPlus, FiZap } from 'react-icons/fi';
 import api from '../services/api';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import StarRating from '../components/StarRating';
+import ProductCard from '../components/ProductCard';
 import Spinner from '../components/Spinner';
 import toast from 'react-hot-toast';
 
 export default function ProductDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { addToCart } = useCart();
   const { user } = useAuth();
 
   const [product, setProduct] = useState(null);
   const [reviews, setReviews] = useState([]);
+  const [relatedProducts, setRelatedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -25,8 +28,14 @@ export default function ProductDetail() {
     const fetchData = async () => {
       try {
         const [p, r] = await Promise.all([api.get(`/products/${id}`), api.get(`/reviews/${id}`)]);
-        setProduct(p.data.product);
+        const currentProduct = p.data.product;
+        setProduct(currentProduct);
         setReviews(r.data.reviews);
+
+        // Fetch related products from same category
+        const related = await api.get(`/products?category=${encodeURIComponent(currentProduct.category)}&limit=5`);
+        const filtered = related.data.products.filter((item) => item._id !== id).slice(0, 4);
+        setRelatedProducts(filtered);
       } finally {
         setLoading(false);
       }
@@ -36,6 +45,15 @@ export default function ProductDetail() {
   }, [id]);
 
   const handleAddToCart = () => addToCart(product._id, quantity);
+
+  const handleBuyNow = async () => {
+    if (!user) {
+      toast.error('Please login to continue');
+      navigate('/login');
+      return;
+    }
+    navigate(`/customise/${product._id}`, { state: { product, quantity } });
+  };
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
@@ -146,6 +164,16 @@ export default function ProductDetail() {
               <FiShoppingCart size={18} />
               {product.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
             </button>
+
+            {product.stock > 0 && (
+              <button
+                onClick={handleBuyNow}
+                className="w-full flex items-center justify-center gap-2 text-base sm:text-lg py-3 sm:py-4 mt-3 rounded-lg border-2 border-primary text-primary font-semibold hover:bg-primary hover:text-white transition-colors"
+              >
+                <FiZap size={18} />
+                Buy Now
+              </button>
+            )}
           </div>
         </div>
 
@@ -215,6 +243,29 @@ export default function ProductDetail() {
             </div>
           )}
         </div>
+        {/* Related Products */}
+        {relatedProducts.length > 0 && (
+          <div className="mt-12 sm:mt-20">
+            <div className="flex items-center justify-between mb-5 sm:mb-8">
+              <div>
+                <span className="text-primary font-semibold uppercase tracking-widest text-xs sm:text-sm">More Like This</span>
+                <h2 className="text-2xl sm:text-3xl font-heading font-bold text-dark mt-1">Related Products</h2>
+              </div>
+              <Link
+                to={`/category?category=${encodeURIComponent(product.category)}`}
+                className="text-primary text-sm font-medium hover:underline flex-shrink-0"
+              >
+                View All →
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
+              {relatedProducts.map((p) => (
+                <ProductCard key={p._id} product={p} />
+              ))}
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

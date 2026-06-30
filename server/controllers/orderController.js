@@ -1,12 +1,39 @@
 const Order = require('../models/Order');
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
+const { cloudinary } = require('../config/cloudinary');
+
+// @desc    Upload custom photo to Cloudinary (called from Checkout)
+// @route   POST /api/orders/upload-custom-photo
+exports.uploadCustomPhoto = async (req, res, next) => {
+  try {
+    const { base64Image, productId } = req.body;
+    if (!base64Image) {
+      return res.status(400).json({ success: false, message: 'No image provided' });
+    }
+
+    const result = await cloudinary.uploader.upload(base64Image, {
+      folder: 'dm-enterprise/custom-orders',
+      resource_type: 'image',
+      transformation: [{ quality: 'auto', fetch_format: 'auto' }],
+    });
+
+    res.status(200).json({
+      success: true,
+      url: result.secure_url,
+      public_id: result.public_id,
+      productId,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 // @desc    Create order
 // @route   POST /api/orders
 exports.createOrder = async (req, res, next) => {
   try {
-    const { shippingInfo } = req.body;
+    const { shippingInfo, customPhotos } = req.body; // customPhotos: { [productId]: cloudinaryUrl }
 
     // Get user cart
     const cart = await Cart.findOne({ user: req.user.id }).populate('items.product');
@@ -32,6 +59,7 @@ exports.createOrder = async (req, res, next) => {
       image: item.product.images?.[0]?.url || '',
       price: item.price,
       quantity: item.quantity,
+      customPhoto: customPhotos?.[item.product._id.toString()] || '',
     }));
 
     const paymentInfo = { method: 'cash', status: 'pending' };

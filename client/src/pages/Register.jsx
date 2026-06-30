@@ -31,7 +31,8 @@ export default function Register() {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = `${import.meta.env.VITE_API_URL || ''}/api/auth/google`;
+    const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
+    window.location.href = `${apiUrl}/api/auth/google`;
   };
 
   const fields = [

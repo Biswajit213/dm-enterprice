@@ -26,6 +26,7 @@ import OrderDetail from './pages/user/OrderDetail';
 import Favorites from './pages/user/Favorites';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
+import Customise from './pages/Customise';
 
 // Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -64,6 +65,7 @@ export default function App() {
           <Route path="/favorites" element={<Favorites />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
+          <Route path="/customise/:id" element={<Customise />} />
         </Route>
       </Route>
 
